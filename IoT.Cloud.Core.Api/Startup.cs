@@ -1,3 +1,4 @@
+using IoT.Cloud.Core.Api.Application.Hubs;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SpaServices.Webpack;
@@ -26,6 +27,8 @@ namespace IoT.Cloud.Core.Api
         {
             // Add framework services.
             services.AddMvc();
+
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -48,6 +51,8 @@ namespace IoT.Cloud.Core.Api
             }
 
             app.UseStaticFiles();
+
+            app.UseSignalR("test");
 
             app.UseMvc(routes =>
             {
