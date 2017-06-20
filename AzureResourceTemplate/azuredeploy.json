@@ -1,0 +1,132 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "AppServiceName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "AppServiceAlwaysOn": {
+      "type": "bool"
+    },
+    "ServiceplanType": {
+      "type": "string",
+      "defaultValue": "F1",
+      "allowedValues": [
+        "F1",
+        "D1",
+        "B1",
+        "B2",
+        "B3",
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "metadata": {
+        "description": "Describes plan's pricing tier and capacity. Check details at https://azure.microsoft.com/en-us/pricing/details/app-service/"
+      }
+    }
+  },
+  "variables": {
+    "AppServicePlanName": "[concat(parameters('AppServiceName'), '-asplan')]",
+    "AuthorizationRules_RootManageSharedAccessKey_name": "RootManageSharedAccessKey"
+  },
+  "resources": [
+    {
+      "name": "[variables('AppServicePlanName')]",
+      "type": "Microsoft.Web/serverfarms",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "sku": {
+        "name": "[parameters('ServiceplanType')]"
+      },
+      "dependsOn": [],
+      "properties": {
+        "name": "[variables('AppServicePlanName')]",
+        "numberOfWorkers": 1
+      }
+    },
+    {
+      "name": "[parameters('appservicename')]",
+      "type": "Microsoft.Web/sites",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2015-08-01",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('AppServicePlanName'))]"
+      ],
+      "tags": {
+        "[concat('hidden-related:', resourceId('Microsoft.Web/serverfarms', variables('AppServicePlanName')))]": "Resource"
+      },
+      "properties": {
+        "name": "[parameters('appservicename')]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('AppServicePlanName'))]",
+        "siteConfig": {
+          "connectionStrings": []
+        }
+      },
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('appservicename'))]"
+          ],
+          "properties": {
+            "phpVersion": "Off",
+            "netFrameworkVersion": "v4.6",
+            "use32BitWorkerProcess": true, /* 64-bit platform */
+            "webSocketsEnabled": false,
+            "alwaysOn": "parameters('AppServiceAlwaysOn')",
+            "remoteDebuggingEnabled": false,
+            "virtualApplications": [
+              {
+                "virtualPath": "/",
+                "physicalPath": "site\\wwwroot"
+              }
+            ]
+          }
+        },
+        {
+          "apiVersion": "2015-08-01",
+          "name": "logs",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', parameters('appservicename'))]"
+          ],
+          "properties": {
+            "applicationLogs": {
+              "fileSystem": {
+                "level": "Off"
+              },
+              "azureTableStorage": {
+                "level": "Off",
+                "sasUrl": null
+              },
+              "azureBlobStorage": {
+                "level": "Error",
+                "sasUrl": "https://replace.me",
+                "retentionInDays": null
+              }
+            },
+            "httpLogs": {
+              "fileSystem": {
+                "enabled": false
+              }
+            },
+            "failedRequestsTracing": {
+              "enabled": false
+            },
+            "detailedErrorMessages": {
+              "enabled": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
